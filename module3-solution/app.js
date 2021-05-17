@@ -1,71 +1,43 @@
 (function () {
 'use strict';
 
-angular.module('NarrowItDownApp', [])
-.controller('NarrowItDownController', NarrowItDownController)
-.factory('NarrowItDownFactory', NarrowItDownFactory)
-.directive('foundItems', foundItemsDirective)
-.constant('ApiBasePath', "https://davids-restaurant.herokuapp.com");
+angular.module("NarrowItDownApp", [])
+.controller("NarrowItDownController", NarrowItDownController)
+.service("NarrowItDownService", NarrowItDownService)
+.directive("foundItems", FoundItemsDirective)
+.constant("ApiBasePath", "https://davids-restaurant.herokuapp.com");
 
-
-function foundItemsDirective() {
-  var ddo = {
-    templateUrl: 'foundItems.html',
-    scope: {
-      items: '<',
-      myTitle: '@title',
-      badRemove: '=',
-      onRemove: '&'
-    },
-    controller: foundItemsDirectiveController,
-    controllerAs: 'list',
-    bindToController: true
-  };
-
-  return ddo;
-}
-
-
-function foundItemsDirectiveController() {
+NarrowItDownController.$inject = ['NarrowItDownService'];
+function NarrowItDownController(NarrowItDownService) {
   var list = this;
-
-  // list.cookiesInList = function () {
-  //   for (var i = 0; i < list.items.length; i++) {
-  //     var name = list.items[i].name;
-  //     if (name.toLowerCase().indexOf("cookie") !== -1) {
-  //       return true;
-  //     }
-  //   }
-  //
-  //   return false;
-  // };
-}
-
-
-NarrowItDownController.$inject = ['NarrowItDownFactory'];
-function NarrowItDownController(NarrowItDownFactory) {
-  var list = this;
-
-  // Use factory to create new shopping list service
-  var narrowItDownFactoryList = NarrowItDownFactory();
-
-  list.items = narrowItDownFactoryList.getItems();
-  var origTitle = "Narrow It Down List #1";
-  //list.title = origTitle + " (" + list.items.length + " items )";
-
   list.searchTerm = "";
-
+  list.found =[];
 
   list.getMatchedMenuItems = function () {
-    narrowItDownFactoryList.getMatchedMenuItems(list.searchTerm);
-    list.title = origTitle + " (" + list.items.length + " items )";
+
+    if( list.searchTerm && list.searchTerm.length > 0 ) {
+
+        var promise = NarrowItDownService.getMatchedMenuItems(list.searchTerm);
+
+        promise.then(function (response) {
+          list.found  =  response;
+          if( list.found.length == 0 )
+          {
+            list.title = "Nothing Found!";
+          }
+        })
+        .catch(function (error) {
+          console.log(error);
+        })
+    }
+    else
+    {
+      list.title = "Nothing Found!";
+    }
   };
 
-  list.removeItem = function (itemIndex) {
-    console.log("'this' is: ", this);
-    this.lastRemoved = "Last item removed was " + this.items[itemIndex].name;
-    shoppingList.removeItem(itemIndex);
-    this.title = origTitle + " (" + list.items.length + " items )";
+  list.onRemove = function (index) {
+    list.found.splice(index, 1);
   };
 }
 
@@ -79,45 +51,40 @@ function NarrowItDownService($http, ApiBasePath) {
 
   service.getMatchedMenuItems = function (searchTerm) {
 
-    var response = $http({
+    return $http({
       method: "GET",
       url: (ApiBasePath + "/menu_items.json")
 
     }).then(function (result) {
 
-        alert(result);
-      // process result and only keep items that match
-
       // Loop
-      for (var i = 0; i < result.length; i++) {
-
-        if(result[i].description.includes(searchTerm))
-          foundItems.push(result[i]);
+      for (var i = 0; i < result.data.menu_items.length; i++) {
+        if(result.data.menu_items[i].description.toUpperCase().indexOf(searchTerm.toUpperCase()) > 0)
+        {
+          foundItems.push(result.data.menu_items[i]);
+        }
       }
-
       // return processed items
       return foundItems;
     });
   };
 
-  service.removeItem = function (itemIndex) {
-    foundItems.splice(itemIndex, 1);
-  };
-
-  service.getItems = function () {
-    return foundItems;
-  };
+  // service.removeItem = function (itemIndex) {
+  //   foundItems.splice(itemIndex, 1);
+  // };
 }
 
-
-
-NarrowItDownFactory.$inject = ['$http', 'ApiBasePath'];
-function NarrowItDownFactory($http, ApiBasePath) {
-  var factory = function ($http, ApiBasePath) {
-    return new NarrowItDownService($http, ApiBasePath);
+function FoundItemsDirective() {
+  var ddo = {
+    templateUrl: "loader/foundItems.html",
+    scope: {
+      items: '<',
+      title: '@title',
+      onRemove: '&'
+    },
   };
-
-  return factory;
+  return ddo;
 }
+
 
 })();
