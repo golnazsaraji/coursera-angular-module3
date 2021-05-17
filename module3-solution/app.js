@@ -3,12 +3,12 @@
 
 angular.module("NarrowItDownApp", [])
 .controller("NarrowItDownController", NarrowItDownController)
-.service("NarrowItDownService", NarrowItDownService)
+.service("MenuSearchService", MenuSearchService)
 .directive("foundItems", FoundItemsDirective)
 .constant("ApiBasePath", "https://davids-restaurant.herokuapp.com");
 
-NarrowItDownController.$inject = ['NarrowItDownService'];
-function NarrowItDownController(NarrowItDownService) {
+NarrowItDownController.$inject = ['MenuSearchService'];
+function NarrowItDownController(MenuSearchService) {
   var list = this;
   list.searchTerm = "";
   list.found =[];
@@ -17,7 +17,7 @@ function NarrowItDownController(NarrowItDownService) {
 
     if( list.searchTerm && list.searchTerm.length > 0 ) {
 
-        var promise = NarrowItDownService.getMatchedMenuItems(list.searchTerm);
+        var promise = MenuSearchService.getMatchedMenuItems(list.searchTerm);
 
         promise.then(function (response) {
           list.found  =  response;
@@ -42,8 +42,8 @@ function NarrowItDownController(NarrowItDownService) {
 }
 
 
-NarrowItDownService.$inject = ['$http', 'ApiBasePath'];
-function NarrowItDownService($http, ApiBasePath) {
+MenuSearchService.$inject = ['$http', 'ApiBasePath'];
+function MenuSearchService($http, ApiBasePath) {
   var service = this;
 
   // List of shopping items
